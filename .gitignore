@@ -1,0 +1,5 @@
+.env
+.xero_tokens.json
+report_*.html
+__pycache__/
+*.pyc
