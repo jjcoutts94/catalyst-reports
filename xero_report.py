@@ -16,19 +16,27 @@ TOKEN_FILE = os.path.join(os.path.dirname(__file__), ".xero_tokens.json")
 
 
 def _load_tokens():
-    """Load OAuth2 tokens from file."""
-    if not os.path.exists(TOKEN_FILE):
-        raise FileNotFoundError(
-            f"No token file found at {TOKEN_FILE}. Run xero_auth.py first."
-        )
-    with open(TOKEN_FILE) as f:
-        return json.load(f)
+    """Load OAuth2 tokens from file or XERO_TOKENS env var."""
+    if os.path.exists(TOKEN_FILE):
+        with open(TOKEN_FILE) as f:
+            return json.load(f)
+    # Fall back to env var (for Railway/cloud deployment)
+    env_tokens = os.getenv("XERO_TOKENS")
+    if env_tokens:
+        return json.loads(env_tokens)
+    raise FileNotFoundError(
+        f"No token file at {TOKEN_FILE} and no XERO_TOKENS env var. Run xero_auth.py first."
+    )
 
 
 def _save_tokens(tokens):
-    """Save refreshed tokens back to file."""
-    with open(TOKEN_FILE, "w") as f:
-        json.dump(tokens, f, indent=2)
+    """Save refreshed tokens back to file and update env var."""
+    try:
+        with open(TOKEN_FILE, "w") as f:
+            json.dump(tokens, f, indent=2)
+    except OSError:
+        pass  # Read-only filesystem in cloud — tokens still in memory
+    os.environ["XERO_TOKENS"] = json.dumps(tokens)
 
 
 def _refresh_token(token_data):
